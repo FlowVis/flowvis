@@ -1,18 +1,58 @@
-from flask import Flask, render_template
+from flask import Flask, redirect, render_template, request, url_for
+import hashlib
+import mysql.connector
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return render_template("inicio.html")
+def conexao_abrir():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password= "",
+        database="flowvis"
+        )
 
-@app.route("/cadastro")
-def cadastro():
+def cadastrar_usuario(u):
+    con = conexao_abrir()
+    cursor = con.cursor()
+
+    senha_hash = hashlib.sha512(u['password'].encode('utf-8')).hexdigest()
+
+    query = "INSERT INTO usuarios (usuario_nome, usuario_user, usuario_email, usuario_senha) VALUES (%s, %s, %s, %s)"
+    cursor.execute(query, (u['usuario_nome'], u['usuario_user'], u['usuario_email'], senha_hash))
+
+    con.commit()
+    cursor.close()
+    con.close()
+
+@app.route("/", methods=["GET", "POST"])
+def cadastrar():
+    if request.method == "POST":
+        nome = request.form.get("name")
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        cadastrar_usuario({
+            "usuario_nome": nome,
+            "usuario_user": username,
+            "usuario_email": email,
+            "password": password
+        })
+
+        return redirect(url_for("home"))
     return render_template("cadastro.html")
+
+@app.route("/home")
+def home():
+    return render_template("home.html")
 
 @app.route("/login")
 def login():
-    return render_template("inicio.html")
+    return render_template("login.html")
+
+@app.route("/recuperar")
+def recuperar_senha():
+    return render_template("senha-redefinir-senha.html")
 
 # acho que tem que arrumar aqui:
 # @app.route("/")
