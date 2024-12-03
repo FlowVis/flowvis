@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 import hashlib
 import mysql.connector
 
@@ -7,8 +7,8 @@ app = Flask(__name__)
 def conexao_abrir():
     return mysql.connector.connect(
         host="localhost",
-        user="root",
-        password= "",
+        user="estudante1",
+        password= "estudante1",
         database="flowvis"
         )
 
@@ -39,20 +39,47 @@ def cadastrar():
             "password": password
         })
 
-        return redirect(url_for("home"))
+        return redirect(url_for("login"))
     return render_template("cadastro.html")
 
 @app.route("/home")
 def home():
     return render_template("home.html")
 
-@app.route("/login")
+def validar_usuario(email, password):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+
+    query = "SELECT * FROM usuario WHERE email = %s"
+    cursor.execute(query, (email,))
+    usuario = cursor.fetchone()
+
+    cursor.close()
+    con.close()
+
+    if usuario and usuario['senha'] == hashlib.sha512(password.encode('utf-8')).hexdigest():
+        session['user'] = usuario['nome']
+        return True
+    return False
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        if validar_usuario(email, password):
+            return redirect(url_for("home"))
+        else:
+            return redirect(url_for("login"))
     return render_template("login.html")
 
 @app.route("/recuperar")
 def recuperar_senha():
     return render_template("senha-redefinir-senha.html")
+
+@app.route("/profile")
+def profile():
+    return render_template("profile.html")
 
 # acho que tem que arrumar aqui:
 # @app.route("/")
