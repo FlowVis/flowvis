@@ -4,11 +4,13 @@ import mysql.connector
 
 app = Flask(__name__)
 
+app.secret_key = "secret"
+
 def conexao_abrir():
     return mysql.connector.connect(
         host="localhost",
-        user="estudante1",
-        password= "estudante1",
+        user="root",
+        password= "admin",
         database="flowvis"
         )
 
@@ -18,7 +20,7 @@ def cadastrar_usuario(u):
 
     senha_hash = hashlib.sha512(u['password'].encode('utf-8')).hexdigest()
 
-    query = "INSERT INTO usuarios (usuario_nome, usuario_user, usuario_email, usuario_senha) VALUES (%s, %s, %s, %s)"
+    query = "INSERT INTO usuario (usuario_nome, usuario_user, usuario_email, usuario_senha) VALUES (%s, %s, %s, %s)"
     cursor.execute(query, (u['usuario_nome'], u['usuario_user'], u['usuario_email'], senha_hash))
 
     con.commit()
@@ -26,7 +28,7 @@ def cadastrar_usuario(u):
     con.close()
 
 @app.route("/", methods=["GET", "POST"])
-def cadastrar():
+def signin():
     if request.method == "POST":
         nome = request.form.get("name")
         username = request.form.get("username")
@@ -40,25 +42,29 @@ def cadastrar():
         })
 
         return redirect(url_for("login"))
-    return render_template("cadastro.html")
+    return render_template("signin.html")
 
 @app.route("/home")
 def home():
     return render_template("home.html")
 
+@app.route("/forgot-password-email")
+def forgot_password():
+    return render_template("forgotpassword1.html")
+
 def validar_usuario(email, password):
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
 
-    query = "SELECT * FROM usuario WHERE email = %s"
+    query = "SELECT * FROM usuario WHERE usuario_email = %s"
     cursor.execute(query, (email,))
     usuario = cursor.fetchone()
 
     cursor.close()
     con.close()
 
-    if usuario and usuario['senha'] == hashlib.sha512(password.encode('utf-8')).hexdigest():
-        session['user'] = usuario['nome']
+    if usuario and usuario['usuario_senha'] == hashlib.sha512(password.encode('utf-8')).hexdigest():
+        session['user'] = usuario['usuario_nome']
         return True
     return False
 

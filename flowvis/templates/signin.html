@@ -3,15 +3,23 @@
 {% block title %}Se Cadastrar{% endblock %}
 
 {% block css %}
-<link rel="stylesheet" href="{{url_for('static', filename='login.css')}}">
+<link rel="stylesheet" href="{{ url_for('static', filename='signin.css') }}">
 {% endblock %}
+
 
 {% block content %}
     <div class="container d-flex align-items-center justify-content-center vh-100">
         <div class="form-container">
-            <h2>Entre aqui  </h2>
-            <br>
+            <h2>Criar conta</h2>
             <form method="POST">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="Seu nome">
+                </div>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Usuário</label>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="@user">
+                </div>
                 <div class="mb-3">
                     <label for="email" class="form-label">E-mail</label>
                     <input type="email" class="form-control" id="email" name="email" placeholder="Seu email">
@@ -20,15 +28,11 @@
                     <label for="password" class="form-label">Senha</label>
                     <input type="password" class="form-control" id="password" name="password" placeholder="********">
                 </div>
-                <div class="text-center mt-3">
-                    <p><a href="/forgot-password-email" style="font-size: .8rem; text-decoration: underline;">Esqueci minha senha.</a></p>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                <button type="submit" class="btn btn-primary w-100">Criar</button>
             </form>
             <div class="text-center mt-3">
-                <p>Não tem uma conta? <a href="/">Crie aqui!</a></p>
+                <p>Já tem uma conta? <a href="/login">Login</a></p>
             </div>
-            
         </div>
     </div>
 
