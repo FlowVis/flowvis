@@ -58,3 +58,22 @@ h2 {
 .text-center a:hover {
     text-decoration: underline;
 }
+
+@keyframes moveRight {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(680px);
+    }
+}
+
+.form-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 50px 120px;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: auto;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    animation: moveRight 0.6s ease-out forwards;
+}
