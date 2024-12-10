@@ -100,7 +100,23 @@ def signin():
 
 @app.route("/home")
 def home():
-    return render_template("home.html")
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+    
+    query = """
+    SELECT p.content, p.created_at, u.usuario_nome, u.usuario_user
+    FROM post p
+    JOIN usuario u ON p.user_id = u.usuario_id
+    ORDER BY p.created_at DESC
+    """
+    cursor.execute(query)
+    posts = cursor.fetchall()
+    
+    cursor.close()
+    con.close()
+
+    return render_template("home.html", posts=posts)
+
 
 def validar_usuario(email, password):
     con = conexao_abrir()
@@ -115,12 +131,51 @@ def validar_usuario(email, password):
 
     if usuario and usuario['usuario_senha'] == hashlib.sha512(password.encode('utf-8')).hexdigest():
         session['user'] = usuario['usuario_nome']
+        session['user_id'] = usuario['usuario_id']
+
         return True
     return False
 
 @app.route("/profile")
 def profile():
     return render_template("profile.html")
+
+@app.route("/post", methods=["POST"])
+def criar_post():
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    conteudo = request.form.get("content")
+    if not conteudo.strip():
+        return redirect(url_for("home", error="Post não pode estar vazio!"))
+
+    con = conexao_abrir()
+    cursor = con.cursor()
+    query = "INSERT INTO post (user_id, content) VALUES (%s, %s)"
+    cursor.execute(query, (session['user_id'], conteudo))
+    con.commit()
+
+    cursor.close()
+    con.close()
+    return redirect(url_for("home"))
+
+
+@app.route("/posts", methods=["GET"])
+def listar_posts():
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+    query = """
+    SELECT p.content, p.created_at, u.usuario_nome, u.usuario_user
+    FROM post p
+    JOIN usuario u ON p.user_id = u.usuario_id
+    ORDER BY p.created_at DESC
+    """
+    cursor.execute(query)
+    posts = cursor.fetchall()
+
+    cursor.close()
+    con.close()
+    return render_template("home.html", posts=posts)
 
 ####################
 def password_check(password):
