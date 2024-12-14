@@ -1,5 +1,5 @@
 import re
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 import hashlib
 import mysql.connector
 
@@ -121,8 +121,6 @@ def home():
 
     return render_template("home.html", posts=posts, user=session['user'])
 
-
-
 def validar_usuario(email, password):
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
@@ -169,56 +167,55 @@ def criar_post():
 def listar_posts():
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
+
     query = """
-    SELECT p.id, p.content, p.created_at, p.curtidas_count, 
-        u.usuario_nome, u.usuario_user,
-        (SELECT COUNT(*) FROM curtidas WHERE user_id = %s AND post_id = p.id) AS user_curtida
+    SELECT p.post_id AS id, p.content, p.created_at, 
+           u.usuario_nome, u.usuario_user,
+           (SELECT COUNT(*) FROM curtidas WHERE post_id = p.post_id) AS curtidas_count,
+           (SELECT COUNT(*) FROM curtidas WHERE user_id = %s AND post_id = p.post_id) AS user_curtida
     FROM post p
     JOIN usuario u ON p.user_id = u.usuario_id
     ORDER BY p.created_at DESC
     """
     cursor.execute(query, (session['user_id'],))
-
     posts = cursor.fetchall()
 
     cursor.close()
     con.close()
     return render_template("home.html", posts=posts)
 
+
 @app.route("/like/<int:post_id>", methods=["POST"])
-def curtir_post(post_id):
+def like_post(post_id):
     if 'user_id' not in session:
-        return redirect(url_for("login"))
+        return jsonify({"success": False, "message": "Usuário não autenticado"}), 401
 
     user_id = session['user_id']
     con = conexao_abrir()
-    cursor = con.cursor()
+    cursor = con.cursor(dictionary=True)
 
-    # Verifica se o usuário já curtiu o post
-    query_verificar = "SELECT * FROM curtidas WHERE user_id = %s AND post_id = %s"
-    cursor.execute(query_verificar, (user_id, post_id))
+    query_check_like = "SELECT * FROM curtidas WHERE user_id = %s AND post_id = %s"
+    cursor.execute(query_check_like, (user_id, post_id))
     curtida = cursor.fetchone()
 
     if curtida:
-        # Remove a curtida
-        query_remover = "DELETE FROM curtidas WHERE user_id = %s AND post_id = %s"
-        cursor.execute(query_remover, (user_id, post_id))
-        query_update_post = "UPDATE post SET curtidas_count = curtidas_count - 1 WHERE post_id = %s"
+        query_remove_like = "DELETE FROM curtidas WHERE user_id = %s AND post_id = %s"
+        cursor.execute(query_remove_like, (user_id, post_id))
+        action = "removed"
     else:
-        # Adiciona uma curtida
-        query_adicionar = "INSERT INTO curtidas (user_id, post_id) VALUES (%s, %s)"
-        cursor.execute(query_adicionar, (user_id, post_id))
-        query_update_post = "UPDATE post SET curtidas_count = curtidas_count + 1 WHERE post_id = %s"
+        query_add_like = "INSERT INTO curtidas (user_id, post_id) VALUES (%s, %s)"
+        cursor.execute(query_add_like, (user_id, post_id))
+        action = "added"
 
-    # Atualiza o contador de curtidas
-    cursor.execute(query_update_post, (post_id,))
+    query_count_likes = "SELECT COUNT(*) AS curtidas_count FROM curtidas WHERE post_id = %s"
+    cursor.execute(query_count_likes, (post_id,))
+    curtidas_count = cursor.fetchone()["curtidas_count"]
+
     con.commit()
-
     cursor.close()
     con.close()
-    return redirect(url_for("home"))
 
-
+    return jsonify({"success": True, "action": action, "curtidas_count": curtidas_count})
 
 ####################
 def password_check(password):
@@ -235,7 +232,7 @@ def password_check(password):
 
     lowercase_error = re.search(r"[a-z]", password) is None
 
-    symbol_error = re.search(r"[ @!#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', password) is None
+    symbol_error = re.search(r"[ @!#$%&'()*+,-./[\\\]^_{|}~"+r'"]', password) is None
 
     password_ok = not (length_error or digit_error or uppercase_error or lowercase_error or symbol_error)
 
@@ -247,6 +244,5 @@ def password_check(password):
         'lowercase_error': lowercase_error,
         'symbol_error': symbol_error,
     }
-
 
 app.run(port=5001)

@@ -24,13 +24,20 @@ CREATE TABLE post (
 SELECT *
 FROM post;
 
+ALTER TABLE post ADD curtidas_count INT DEFAULT 0;
+
 CREATE TABLE curtidas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     post_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES usuario(usuario_id),
-    FOREIGN KEY (post_id) REFERENCES post(id)
+    FOREIGN KEY (post_id) REFERENCES post(post_id)
 );
     
+SELECT *
+FROM curtidas;
+    
 DROP TABLE usuario;
+DROP TABLE post;
+DROP TABLE curtidas;

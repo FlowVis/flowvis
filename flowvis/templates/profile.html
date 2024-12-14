@@ -1,53 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlowVis - Meu Perfil</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <!-- Sidebar -->
+{% extends "base/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
     <div class="sidebar">
         <h2 class="text-center text-danger">FlowVis</h2>
-        <a href="#"><i class="fas fa-home"></i> Início</a>
+        <a href="{{ url_for('home') }}"><i class="fas fa-home"></i> Início</a>
         <a href="#"><i class="fas fa-search"></i> Descubra</a>
         <a href="#"><i class="fas fa-calendar"></i> Meus eventos</a>
         <a href="#"><i class="fas fa-plus"></i> Criar</a>
-        <a href="#" class="mt-5"><i class="fas fa-cog"></i> Ajustes</a>
+        <a href="{{ url_for('profile') }}" class="mt-5"><i class="fas fa-user"></i> Meu Perfil</a>
+        <a href="#"><i class="fas fa-cog"></i> Ajustes</a>
         <a href="#"><i class="fas fa-question-circle"></i> Suporte e Termos</a>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Profile Header -->
         <div class="profile-header">
             <img src="{{ url_for('static', filename='images/background.jpg') }}" alt="Capa" class="cover-photo">
             <img src="{{ url_for('static', filename='images/profile.jpg') }}" alt="Foto de Perfil" class="profile-picture">
         </div>
 
-        <!-- Profile Info -->
         <div class="profile-stats mt-3">
-            <h5>{{ user.name }} • {{ user.username }}</h5>
-            <p>{{ user.following }} seguindo • {{ user.followers }} seguidores</p>
+            <h5>{{ user }}</h5>
+            <p>{{ session.user_id }} seguindo • {{ posts|length }} publicações</p>
             <button class="btn btn-outline-danger">Editar perfil</button>
         </div>
 
-        <!-- Content Section -->
         <div class="row mt-4">
             <div class="col-md-8">
                 <div class="content-section">
                     <h5 class="text-danger">Publicações</h5>
-                    {% for event in user.events %}
+                    {% for post in posts %}
                     <div class="card mt-3">
                         <div class="card-body">
-                            <h6>{{ event.title }} • {{ event.date }}</h6>
-                            <p>{{ event.description }}<br>{{ event.tags }}</p>
-                            <img src="{{ url_for('static', filename='images/' + event.image) }}" alt="Evento" class="img-fluid rounded">
+                            <h6>{{ post['usuario_nome'] }} • {{ post['created_at'] }}</h6>
+                            <p>{{ post['content'] }}</p>
                         </div>
                     </div>
+                    {% else %}
+                    <p class="text-muted">Nenhuma publicação ainda.</p>
                     {% endfor %}
                 </div>
             </div>
@@ -55,7 +51,7 @@
             <div class="col-md-4">
                 <div class="content-section">
                     <h5 class="text-danger">Talvez você conheça...</h5>
-                    {% for suggestion in user.suggestions %}
+                    {% for suggestion in suggestions %}
                     <div class="d-flex align-items-center mt-3">
                         <img src="{{ url_for('static', filename='images/' + suggestion.image) }}" alt="{{ suggestion.name }}">
                         <div class="ms-3">
@@ -64,170 +60,17 @@
                         </div>
                     </div>
                     <hr>
+                    {% else %}
+                    <p class="text-muted">Nenhuma sugestão disponível.</p>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- Footer -->
         <footer class="text-center mt-4">
             <p class="text-muted">FlowVis</p>
         </footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-
-<!-- 
-AQUI É O HTML:
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlowVis - Meu Perfil</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .sidebar {
-            height: 100vh;
-            background-color: #ffffff;
-            border-right: 1px solid #ddd;
-            padding: 1rem;
-            position: fixed;
-            width: 240px;
-        }
-        .sidebar a {
-            display: block;
-            margin: 0.5rem 0;
-            color: #333;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .sidebar a:hover {
-            color: #dc3545;
-        }
-        .main-content {
-            margin-left: 260px;
-            padding: 1rem;
-        }
-        .profile-header {
-            position: relative;
-            text-align: center;
-        }
-        .profile-header img.cover-photo {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 12px;
-        }
-        .profile-header .profile-picture {
-            position: absolute;
-            bottom: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            border: 4px solid #fff;
-            object-fit: cover;
-        }
-        .profile-stats {
-            margin-top: 60px;
-            text-align: center;
-        }
-        .profile-stats h5 {
-            margin: 0;
-            font-weight: bold;
-        }
-        .content-section {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 1rem;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .suggestions img {
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-        }
-    </style>
-</head>
-<body>
-    <!-- Sidebar 
-    <div class="sidebar">
-        <h2 class="text-center text-danger">FlowVis</h2>
-        <a href="#"><i class="fas fa-home"></i> Início</a>
-        <a href="#"><i class="fas fa-search"></i> Descubra</a>
-        <a href="#"><i class="fas fa-calendar"></i> Meus eventos</a>
-        <a href="#"><i class="fas fa-plus"></i> Criar</a>
-        <a href="#" class="mt-5"><i class="fas fa-cog"></i> Ajustes</a>
-        <a href="#"><i class="fas fa-question-circle"></i> Suporte e Termos</a>
-    </div>
-
-    <!-- Main Content -->
-    <!-- <div class="main-content"> -->
-        <!-- Profile Header -->
-        <!-- <div class="profile-header">
-            <img src="background.jpg" alt="Capa" class="cover-photo">
-            <img src="profile.jpg" alt="Foto de Perfil" class="profile-picture">
-        </div> -->
-
-        <!-- Profile Info -->
-        <!-- <div class="profile-stats mt-3">
-            <h5>Alice Maria • @licemaria</h5>
-            <p>28 seguindo • 168 seguidores</p>
-            <button class="btn btn-outline-danger">Editar perfil</button>
-        </div> -->
-
-        <!-- Content Section -->
-        <!-- <div class="row mt-4">
-            <div class="col-md-8">
-                <div class="content-section">
-                    <h5 class="text-danger">Publicações</h5>
-                    <div class="card mt-3">
-                        <div class="card-body">
-                            <h6>AUTÓDROMO DE INTERLAGOS • NOVEMBRO 14</h6>
-                            <p>Evento: I-N-C-R-Í-V-E-L<br>#race #formula1</p>
-                            <img src="race.jpg" alt="Evento" class="img-fluid rounded">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="content-section">
-                    <h5 class="text-danger">Talvez você conheça...</h5>
-                    <div class="d-flex align-items-center mt-3">
-                        <img src="user1.jpg" alt="Alina Boz">
-                        <div class="ms-3">
-                            <h6 class="mb-0">Alina Boz</h6>
-                            <p class="mb-0 text-muted">Santa Monica, CA<br>@BozAlina</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="d-flex align-items-center mt-3">
-                        <img src="user2.jpg" alt="Elijah Mikaelson">
-                        <div class="ms-3">
-                            <h6 class="mb-0">Elijah Mikaelson</h6>
-                            <p class="mb-0 text-muted">Sófia, BG<br>@elijahmikael</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
-        <!-- Footer 
-        <footer class="text-center mt-4">
-            <p class="text-muted">FlowVis</p>
-        </footer>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> -->
+{% endblock %}

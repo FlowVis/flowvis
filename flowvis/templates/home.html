@@ -14,7 +14,7 @@
                 <img src="static/images/logomarca.png" alt="FlowVis Logo">
             </div>
             <nav class="menu">
-                <a class="nav-link active" href="#">
+                <a class="nav-link active" href="/home">
                     <i class="fas fa-home"></i> Início
                 </a>
                 <a class="nav-link" href="#">
@@ -44,8 +44,8 @@
                     <img src="imagensfeed/curtidas.png" alt="Favoritos">
                     <img src="imagensfeed/chat.png" alt="Notificações">
                     <div class="profile">
-                        <span>{{ user }}</span>
-                        <img src="perfilteste.png" alt="Foto de perfil">
+                        <i class="fa-solid fa-user"></i>
+                        <a href="/profile" style="color: inherit;">{{ user }}</a>
                     </div>
                 </div>
             </header>
@@ -61,7 +61,7 @@
 
             <section class="groups-section">
                 <div class="tabs">
-                    <button>Sua grupos</button>
+                    <button>Seus Grupos</button>
                     <button>Convites</button>
                     <button class="active">Tendências</button>
                     <button>Seguindo</button>
@@ -96,22 +96,26 @@
             </section>
 
             {% for post in posts %}
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ post['usuario_nome'] }} • @{{ post['usuario_user'] }}</h5>
-                        <p class="text-muted">{{ post['created_at'] }}</p>
-                        <p class="card-text">{{ post['content'] }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <form action="/like/{{ post['id'] }}" method="POST">
-                                <button type="submit" class="btn btn-sm {{ 'btn-danger' if post['user_curtida'] else 'btn-outline-danger' }}">
-                                    <i class="fas fa-heart"></i> {{ post['curtidas_count'] }}
-                                </button>
-                            </form>                        
-                            <span><i class="fas fa-comment"></i> Comentar</span>
-                        </div>
+            <div class="card mb-3" id="post-{{ post['id'] }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post['usuario_nome'] }} • @{{ post['usuario_user'] }}</h5>
+                    <p class="text-muted">{{ post['created_at'] }}</p>
+                    <p class="card-text">{{ post['content'] }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        
+                        <button class="btn btn-sm like-button {{ 'btn-danger' if post['user_curtida'] else 'btn-outline-danger' }}" 
+                                data-post-id="{{ post['id'] }}" 
+                                data-user-curtida="{{ '1' if post['user_curtida'] else '0' }}">
+                            <i class="{{ 'fa-thin fa-heart' if post['user_curtida'] else 'fa-regular fa-heart' }}"></i>
+                            {{ "Descurtir" if post['user_curtida'] else "Curtir" }} ({{ post['curtidas_count'] }})
+                        </button>
+                        <span><i class="fas fa-comment"></i> Comentar</span>
                     </div>
-                </div> <br>
+                </div>
+            </div>
             {% endfor %}
+            
+            
         </main>
 
         <aside class="event-sidebar">
@@ -129,4 +133,49 @@
             <a href="#">Descubra todos</a>
         </aside>
     </div>    
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const likeButtons = document.querySelectorAll(".like-button");
+
+    likeButtons.forEach(button => {
+        button.addEventListener("click", function () {
+            const postId = this.getAttribute("data-post-id");
+            const userCurtida = this.getAttribute("data-user-curtida") === "1";
+
+            fetch(`/like/${postId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const icon = this.querySelector("i");
+                    if (data.action === "added") {
+                        this.classList.remove("btn-outline-danger");
+                        this.classList.add("btn-danger");
+                        this.setAttribute("data-user-curtida", "1");
+                        icon.classList.remove("fa-thin");
+                        icon.classList.add("fa-solid");
+                        this.innerHTML = `<i class="fa-solid fa-heart"></i> Descurtir (${data.curtidas_count})`;
+                    } else {
+                        this.classList.remove("btn-danger");
+                        this.classList.add("btn-outline-danger");
+                        this.setAttribute("data-user-curtida", "0");
+                        icon.classList.remove("fa-solid");
+                        icon.classList.add("fa-thin");
+                        this.innerHTML = `<i class="fa-thin fa-heart"></i> Curtir (${data.curtidas_count})`;
+                    }
+                } else {
+                    alert(data.message || "Erro ao curtir o post");
+                }
+            })
+            .catch(error => console.error("Erro:", error));
+        });
+    });
+});
+
+    </script>
 {% endblock %}
