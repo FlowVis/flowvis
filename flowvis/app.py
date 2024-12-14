@@ -100,11 +100,15 @@ def signin():
 
 @app.route("/home")
 def home():
+    if 'user' not in session:
+        return redirect(url_for("login"))
+    
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
     
     query = """
-    SELECT p.content, p.created_at, u.usuario_nome, u.usuario_user
+    SELECT p.post_id AS id, p.content, p.created_at, 
+       p.curtidas_count, u.usuario_nome, u.usuario_user
     FROM post p
     JOIN usuario u ON p.user_id = u.usuario_id
     ORDER BY p.created_at DESC
@@ -115,7 +119,8 @@ def home():
     cursor.close()
     con.close()
 
-    return render_template("home.html", posts=posts)
+    return render_template("home.html", posts=posts, user=session['user'])
+
 
 
 def validar_usuario(email, password):
@@ -165,17 +170,55 @@ def listar_posts():
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
     query = """
-    SELECT p.content, p.created_at, u.usuario_nome, u.usuario_user
+    SELECT p.id, p.content, p.created_at, p.curtidas_count, 
+        u.usuario_nome, u.usuario_user,
+        (SELECT COUNT(*) FROM curtidas WHERE user_id = %s AND post_id = p.id) AS user_curtida
     FROM post p
     JOIN usuario u ON p.user_id = u.usuario_id
     ORDER BY p.created_at DESC
     """
-    cursor.execute(query)
+    cursor.execute(query, (session['user_id'],))
+
     posts = cursor.fetchall()
 
     cursor.close()
     con.close()
     return render_template("home.html", posts=posts)
+
+@app.route("/like/<int:post_id>", methods=["POST"])
+def curtir_post(post_id):
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    user_id = session['user_id']
+    con = conexao_abrir()
+    cursor = con.cursor()
+
+    # Verifica se o usuário já curtiu o post
+    query_verificar = "SELECT * FROM curtidas WHERE user_id = %s AND post_id = %s"
+    cursor.execute(query_verificar, (user_id, post_id))
+    curtida = cursor.fetchone()
+
+    if curtida:
+        # Remove a curtida
+        query_remover = "DELETE FROM curtidas WHERE user_id = %s AND post_id = %s"
+        cursor.execute(query_remover, (user_id, post_id))
+        query_update_post = "UPDATE post SET curtidas_count = curtidas_count - 1 WHERE post_id = %s"
+    else:
+        # Adiciona uma curtida
+        query_adicionar = "INSERT INTO curtidas (user_id, post_id) VALUES (%s, %s)"
+        cursor.execute(query_adicionar, (user_id, post_id))
+        query_update_post = "UPDATE post SET curtidas_count = curtidas_count + 1 WHERE post_id = %s"
+
+    # Atualiza o contador de curtidas
+    cursor.execute(query_update_post, (post_id,))
+    con.commit()
+
+    cursor.close()
+    con.close()
+    return redirect(url_for("home"))
+
+
 
 ####################
 def password_check(password):
