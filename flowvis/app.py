@@ -217,6 +217,192 @@ def like_post(post_id):
 
     return jsonify({"success": True, "action": action, "curtidas_count": curtidas_count})
 
+def criar_grupo_bd(nome, imagem):
+    con = conexao_abrir()
+    cursor = con.cursor()
+
+    query = "INSERT INTO grupos (nome, imagem) VALUES (%s, %s)"
+    cursor.execute(query, (nome, imagem))
+    con.commit()
+
+    cursor.close()
+    con.close()
+
+def listar_grupos_bd(usuario_id):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+
+    query = """
+    SELECT g.id, g.nome, g.imagem, 
+           (SELECT COUNT(*) FROM grupo_usuarios WHERE grupo_id = g.id) AS participantes
+    FROM grupos g
+    WHERE g.id NOT IN (
+        SELECT grupo_id FROM grupo_usuarios WHERE usuario_id = %s
+    )
+    """
+    cursor.execute(query, (usuario_id,))
+    grupos = cursor.fetchall()
+
+    cursor.close()
+    con.close()
+    return grupos
+
+@app.route("/criar-grupo", methods=["GET", "POST"])
+def criar_grupo():
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        imagem = request.form.get("imagem")
+
+        if not nome or not imagem:
+            return render_template("criar_grupo.html", error="Todos os campos são obrigatórios.")
+
+        criar_grupo_bd(nome, imagem)
+        return redirect(url_for("descubra"))
+
+    return render_template("criar_grupo.html")
+
+@app.route("/descubra")
+def descubra():
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    usuario_id = session['user_id']
+    grupos = listar_grupos_bd(usuario_id)
+    return render_template("descubra.html", grupos=grupos, user=session.get('user'))
+
+def participar_grupo_bd(grupo_id, usuario_id):
+    con = conexao_abrir()
+    cursor = con.cursor()
+
+    query = """INSERT IGNORE INTO grupo_usuarios (grupo_id, usuario_id)
+               VALUES (%s, %s)"""
+    cursor.execute(query, (grupo_id, usuario_id))
+    con.commit()
+
+    cursor.close()
+    con.close()
+
+def listar_grupos_usuario(usuario_id):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+
+    query = """
+    SELECT g.id, g.nome, g.imagem, 
+           (SELECT COUNT(*) FROM grupo_usuarios WHERE grupo_id = g.id) AS participantes
+    FROM grupo_usuarios gu
+    JOIN grupos g ON gu.grupo_id = g.id
+    WHERE gu.usuario_id = %s
+    """
+    cursor.execute(query, (usuario_id,))
+    grupos = cursor.fetchall()
+
+    cursor.close()
+    con.close()
+    return grupos
+
+@app.route("/participar/<int:grupo_id>", methods=["POST"])
+def participar_grupo(grupo_id):
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    usuario_id = session['user_id']
+    participar_grupo_bd(grupo_id, usuario_id)
+
+    return redirect(url_for("descubra"))
+
+@app.route("/grupos")
+def grupos():
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    usuario_id = session['user_id']
+    meus_grupos = listar_grupos_usuario(usuario_id)
+    novos_grupos = listar_grupos_bd(usuario_id)
+
+    return render_template("grupos.html", meus_grupos=meus_grupos, novos_grupos=novos_grupos)
+
+def obter_detalhes_grupo(grupo_id):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+
+    query_grupo = "SELECT id, nome, imagem FROM grupos WHERE id = %s"
+    cursor.execute(query_grupo, (grupo_id,))
+    grupo = cursor.fetchone()
+
+    query_participantes = """
+    SELECT u.usuario_nome, u.usuario_user
+    FROM grupo_usuarios gu
+    JOIN usuario u ON gu.usuario_id = u.usuario_id
+    WHERE gu.grupo_id = %s
+    """
+    cursor.execute(query_participantes, (grupo_id,))
+    participantes = cursor.fetchall()
+
+    cursor.close()
+    con.close()
+
+    return grupo, participantes
+
+def listar_posts_grupo(grupo_id):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+
+    query = """
+    SELECT p.post_id AS id, p.content, p.created_at, 
+           p.curtidas_count, u.usuario_nome, u.usuario_user
+    FROM post_grupo p
+    JOIN usuario u ON p.user_id = u.usuario_id
+    WHERE p.grupo_id = %s
+    ORDER BY p.created_at DESC
+    """
+    cursor.execute(query, (grupo_id,))
+    posts = cursor.fetchall()
+
+    cursor.close()
+    con.close()
+    return posts
+
+@app.route("/grupo/<int:grupo_id>")
+def pagina_grupo(grupo_id):
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    grupo, participantes = obter_detalhes_grupo(grupo_id)
+    posts = listar_posts_grupo(grupo_id)
+    return render_template("grupo.html", grupo=grupo, participantes=participantes, posts=posts, user=session.get('user'))
+
+@app.route("/grupo/<int:grupo_id>/postar", methods=["POST"])
+def criar_post_grupo(grupo_id):
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    conteudo = request.form.get("content")
+    if not conteudo.strip():
+        return redirect(url_for("pagina_grupo", grupo_id=grupo_id, error="Post não pode estar vazio!"))
+
+    con = conexao_abrir()
+    cursor = con.cursor()
+
+    query = "INSERT INTO post_grupo (grupo_id, user_id, content) VALUES (%s, %s, %s)"
+    cursor.execute(query, (grupo_id, session['user_id'], conteudo))
+    con.commit()
+
+    cursor.close()
+    con.close()
+    return redirect(url_for("pagina_grupo", grupo_id=grupo_id))
+
+
+
+
+
+
+
+
+
+
+
+
+
 ####################
 def password_check(password):
     """

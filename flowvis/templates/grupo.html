@@ -1,0 +1,60 @@
+{% extends "base/loggedbase.html" %}
+
+{% block title %}{{ grupo['nome'] }}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='grupo.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="grupo-page">
+    <div class="grupo-info">
+        <img src="{{ grupo['imagem'] }}" alt="Imagem do Grupo">
+        <h1>{{ grupo['nome'] }}</h1>
+    </div>
+    <div class="grupo-content">
+
+        <div class="posts-section">
+            <h2>Posts do Grupo</h2>
+            {% for post in posts %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post['usuario_nome'] }} • @{{ post['usuario_user'] }}</h5>
+                    <p class="text-muted">{{ post['created_at'] }}</p>
+                    <p class="card-text">{{ post['content'] }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button class="btn btn-sm like-button {{ 'btn-danger' if post['user_curtida'] else 'btn-outline-danger' }}" 
+                                data-post-id="{{ post['id'] }}" 
+                                data-user-curtida="{{ '1' if post['user_curtida'] else '0' }}">
+                            <i class="{{ 'fa-thin fa-heart' if post['user_curtida'] else 'fa-regular fa-heart' }}"></i>
+                            {{ "Descurtir" if post['user_curtida'] else "Curtir" }} ({{ post['curtidas_count'] }})
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="post-form-fixed">
+                <h3>Criar Post</h3>
+                <form action="/grupo/{{ grupo['id'] }}/postar" method="POST" class="d-flex align-items-center">
+                    <textarea class="form-control mb-2" name="content" rows="1" placeholder="O que você está pensando?" required></textarea>
+                    <button type="submit" class="btn btn-primary">Postar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="participantes-section">
+            <h2>Participantes</h2>
+            <ul>
+                {% for participante in participantes %}
+                <li>
+                    <strong>{{ participante['usuario_nome'] }}</strong> (@{{ participante['usuario_user'] }})
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+    
+{% endblock %}

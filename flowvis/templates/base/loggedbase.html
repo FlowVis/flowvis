@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block css %}
+    {% endblock %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %} {%endblock %}</title>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="static/images/logomarca.png" alt="FlowVis Logo">
+            </div>
+            <nav class="menu">
+                <a class="nav-link active" href="/home">
+                    <i class="fas fa-home"></i> Início
+                </a>
+                <a class="nav-link" href="/descubra">
+                    <i class="fas fa-search"></i> Descubra
+                </a>
+                <a class="nav-link" href="#">
+                    <i class="fas fa-calendar-alt"></i> Meus eventos
+                </a>
+                <a class="nav-link" href="/grupos">
+                    <i class="fas fa-users"></i> Grupos
+                </a>
+                
+                <a class="nav-link" href="/criar-grupo">
+                    <i class="fas fa-plus"></i> Criar
+                </a>
+            </nav>
+            <div class="bottom-links">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-cogs"></i> Ajustes
+                </a>
+                <a class="nav-link" href="#">
+                    <i class="fas fa-question-circle"></i> Suporte e Termos
+                </a>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="header">
+                <input type="text" placeholder="Procure um grupo ou evento">
+                <div class="icons">
+                    <img src="imagensfeed/curtidas.png" alt="Favoritos">
+                    <img src="imagensfeed/chat.png" alt="Notificações">
+                    <div class="profile">
+                        <i class="fa-solid fa-user"></i>
+                        <a href="/profile" style="color: inherit;">{{ user }}</a>
+                    </div>
+                </div>
+            </header>
+    {% block content %}
+    {% endblock %}
+    <aside class="event-sidebar">
+        <h2>Principais eventos:</h2>
+        <ul>
+            <li>
+                <span>FÓRMULA 1</span>
+                <p>13/03/2024<br>Autódromo de Interlagos</p>
+            </li>
+            <li>
+                <span>MIDNIGHT CLUB</span>
+                <p>13/03/2024<br>Kartódromo Aldeia da Serra</p>
+            </li>
+        </ul>
+        <a href="#">Descubra todos</a>
+    </aside>
+</div>   
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/flowvis/static/scripts/script.js"></script>
+</body>
+</html>

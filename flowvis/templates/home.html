@@ -1,4 +1,4 @@
-{% extends "base/base.html" %}
+{% extends "base/loggedbase.html" %}
 
 {% block title %}Dashboard{% endblock %}
 
@@ -8,48 +8,6 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        <aside class="sidebar">
-            <div class="logo">
-                <img src="static/images/logomarca.png" alt="FlowVis Logo">
-            </div>
-            <nav class="menu">
-                <a class="nav-link active" href="/home">
-                    <i class="fas fa-home"></i> Início
-                </a>
-                <a class="nav-link" href="#">
-                    <i class="fas fa-search"></i> Descubra
-                </a>
-                <a class="nav-link" href="#">
-                    <i class="fas fa-calendar-alt"></i> Meus eventos
-                </a>
-                <a class="nav-link" href="#">
-                    <i class="fas fa-plus"></i> Criar
-                </a>
-            </nav>
-            <div class="bottom-links">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-cogs"></i> Ajustes
-                </a>
-                <a class="nav-link" href="#">
-                    <i class="fas fa-question-circle"></i> Suporte e Termos
-                </a>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <header class="header">
-                <input type="text" placeholder="Procure um grupo ou evento">
-                <div class="icons">
-                    <img src="imagensfeed/curtidas.png" alt="Favoritos">
-                    <img src="imagensfeed/chat.png" alt="Notificações">
-                    <div class="profile">
-                        <i class="fa-solid fa-user"></i>
-                        <a href="/profile" style="color: inherit;">{{ user }}</a>
-                    </div>
-                </div>
-            </header>
-
             <section class="highlight">
                 <h1>Veja as melhores postagens</h1>
                 <p>Siga seus interesses. Conecte-se com eles.</p>
@@ -59,40 +17,14 @@
                 </div>
             </section>
 
-            <section class="groups-section">
-                <div class="tabs">
-                    <button>Seus Grupos</button>
-                    <button>Convites</button>
-                    <button class="active">Tendências</button>
-                    <button>Seguindo</button>
-                </div>
+                <section class="groups-section">
+                    <div class="tabs">
+                        <button>Seus Grupos</button>
+                        <button>Convites</button>
+                        <button class="active">Tendências</button>
+                        <button>Seguindo</button>
+                    </div>
 
-                <div class="cards">
-                    <div class="card">
-                        <img src="imagensfeed/trilhafeed.png" alt="Trilhas SP">
-                        <h3>TRILHAS SP</h3>
-                        <p>100 pessoas</p>
-                        <a href="#">Ver detalhes</a>
-                    </div>
-                    <div class="card">
-                        <img src="imagensfeed/kartfeed.png" alt="Kart Abril">
-                        <h3>KART ABRIL</h3>
-                        <p>25 pessoas</p>
-                        <a href="#">Ver detalhes</a>
-                    </div>
-                    <div class="card">
-                        <img src="imagensfeed/motofeed.png" alt="Interlagos">
-                        <h3>INTERLAGOS</h3>
-                        <p>105 pessoas</p>
-                        <a href="#">Ver detalhes</a>
-                    </div>
-                    <div class="card">
-                        <img src="imagensfeed/f1feed.png" alt="Fórmula 1">
-                        <h3>FÓRMULA 1</h3>
-                        <p>236 pessoas</p>
-                        <a href="#">Ver detalhes</a>
-                    </div>
-                </div>
             </section>
 
             {% for post in posts %}
@@ -114,68 +46,56 @@
                 </div>
             </div>
             {% endfor %}
+            <div class="post-form-fixed">
+                <form action="/post" method="POST" class="d-flex align-items-center">
+                    <textarea class="form-control me-2" name="content" rows="1" placeholder="O que você está pensando?" required></textarea>
+                    <button type="submit" class="btn btn-primary">Postar</button>
+                </form>
+            </div>
             
             
         </main>
-
-        <aside class="event-sidebar">
-            <h2>Principais eventos:</h2>
-            <ul>
-                <li>
-                    <span>FÓRMULA 1</span>
-                    <p>13/03/2024<br>Autódromo de Interlagos</p>
-                </li>
-                <li>
-                    <span>MIDNIGHT CLUB</span>
-                    <p>13/03/2024<br>Kartódromo Aldeia da Serra</p>
-                </li>
-            </ul>
-            <a href="#">Descubra todos</a>
-        </aside>
-    </div>    
-
     <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const likeButtons = document.querySelectorAll(".like-button");
+        document.addEventListener("DOMContentLoaded", function () {
+            const likeButtons = document.querySelectorAll(".like-button");
 
-    likeButtons.forEach(button => {
-        button.addEventListener("click", function () {
-            const postId = this.getAttribute("data-post-id");
-            const userCurtida = this.getAttribute("data-user-curtida") === "1";
+            likeButtons.forEach(button => {
+                button.addEventListener("click", function () {
+                    const postId = this.getAttribute("data-post-id");
+                    const userCurtida = this.getAttribute("data-user-curtida") === "1";
 
-            fetch(`/like/${postId}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const icon = this.querySelector("i");
-                    if (data.action === "added") {
-                        this.classList.remove("btn-outline-danger");
-                        this.classList.add("btn-danger");
-                        this.setAttribute("data-user-curtida", "1");
-                        icon.classList.remove("fa-thin");
-                        icon.classList.add("fa-solid");
-                        this.innerHTML = `<i class="fa-solid fa-heart"></i> Descurtir (${data.curtidas_count})`;
-                    } else {
-                        this.classList.remove("btn-danger");
-                        this.classList.add("btn-outline-danger");
-                        this.setAttribute("data-user-curtida", "0");
-                        icon.classList.remove("fa-solid");
-                        icon.classList.add("fa-thin");
-                        this.innerHTML = `<i class="fa-thin fa-heart"></i> Curtir (${data.curtidas_count})`;
-                    }
-                } else {
-                    alert(data.message || "Erro ao curtir o post");
-                }
-            })
-            .catch(error => console.error("Erro:", error));
+                    fetch(`/like/${postId}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const icon = this.querySelector("i");
+                            if (data.action === "added") {
+                                this.classList.remove("btn-outline-danger");
+                                this.classList.add("btn-danger");
+                                this.setAttribute("data-user-curtida", "1");
+                                icon.classList.remove("fa-thin");
+                                icon.classList.add("fa-solid");
+                                this.innerHTML = `<i class="fa-solid fa-heart"></i> Descurtir (${data.curtidas_count})`;
+                            } else {
+                                this.classList.remove("btn-danger");
+                                this.classList.add("btn-outline-danger");
+                                this.setAttribute("data-user-curtida", "0");
+                                icon.classList.remove("fa-solid");
+                                icon.classList.add("fa-thin");
+                                this.innerHTML = `<i class="fa-thin fa-heart"></i> Curtir (${data.curtidas_count})`;
+                            }
+                        } else {
+                            alert(data.message || "Erro ao curtir o post");
+                        }
+                    })
+                    .catch(error => console.error("Erro:", error));
+                });
+            });
         });
-    });
-});
-
     </script>
 {% endblock %}

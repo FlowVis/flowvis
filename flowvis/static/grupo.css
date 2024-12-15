@@ -344,3 +344,81 @@ body {
     margin: 10px;
 }
 
+.grupo-page {
+    padding: 20px;
+}
+
+.grupo-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.grupo-info img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+
+.grupo-info h1 {
+    font-size: 24px;
+    margin: 0;
+    color: #333;
+}
+
+
+.posts-section .card {
+    margin-bottom: 15px;
+}
+
+.post-form {
+    margin-top: 20px;
+}
+
+.participantes-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.participantes-section li {
+    margin-bottom: 10px;
+}
+
+.grupo-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.posts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.participantes-section {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.participantes-section h2 {
+    margin-bottom: 15px;
+}
+
+.participantes-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.participantes-section li {
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.participantes-section li strong {
+    font-weight: bold;
+}
