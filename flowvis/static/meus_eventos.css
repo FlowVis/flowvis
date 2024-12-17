@@ -168,9 +168,9 @@ body {
 }
 
 .card:hover {
-    transform: scale(1.01);
+    transform: scale(1.05);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    transition: 0.1s ease;
+    transition: 0.3s ease;
 }
 
 .card img {
@@ -344,7 +344,64 @@ body {
     margin: 10px;
 }
 
-.spacer {
-    height: 120px;
+/* Estilizando o Calendário */
+table.calendar {
     width: 100%;
+    margin-top: 20px;
+}
+
+table.calendar th {
+    background-color: #f8f9fa;
+    color: #495057;
+    text-align: center;
+}
+
+table.calendar td {
+    height: 80px;
+    vertical-align: top;
+    text-align: center;
+    position: relative;
+    font-size: 16px;
+}
+
+table.calendar .day-box {
+    position: relative;
+    padding: 5px;
+}
+
+table.calendar .event-icon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #007bff;
+    font-size: 20px;
+}
+
+table.calendar .event-icon a {
+    color: inherit;
+    text-decoration: none;
+}
+
+table.calendar .event-icon i {
+    font-size: 20px;
+    cursor: pointer;
+}
+
+table.calendar .day-box span {
+    font-weight: bold;
+    display: block;
+}
+
+/* Tooltip */
+table.calendar .event-icon a:hover {
+    color: #0056b3;
+}
+
+table.calendar .event-day {
+    color: #007bff;
+    font-weight: bold;
+}
+
+table.calendar .event-day:hover {
+    text-decoration: underline;
 }

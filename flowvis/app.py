@@ -1,3 +1,5 @@
+import calendar
+from datetime import datetime
 import re
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 import hashlib
@@ -211,22 +213,69 @@ def like_post(post_id):
     cursor.execute(query_count_likes, (post_id,))
     curtidas_count = cursor.fetchone()["curtidas_count"]
 
+    query_update_post_likes = "UPDATE post SET curtidas_count = %s WHERE post_id = %s"
+    cursor.execute(query_update_post_likes, (curtidas_count, post_id))
+
     con.commit()
     cursor.close()
     con.close()
 
     return jsonify({"success": True, "action": action, "curtidas_count": curtidas_count})
 
-def criar_grupo_bd(nome, imagem):
+@app.route("/grupo/<int:grupo_id>/like/<int:post_id>", methods=["POST"])
+def like_post_grupo(grupo_id, post_id):
+    if 'user_id' not in session:
+        return jsonify({"success": False, "message": "Usuário não autenticado"}), 401
+
+    user_id = session['user_id']
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
+
+    query_check_like = "SELECT * FROM curtidas WHERE user_id = %s AND post_id = %s"
+    cursor.execute(query_check_like, (user_id, post_id))
+    curtida = cursor.fetchone()
+
+    if curtida:
+        query_remove_like = "DELETE FROM curtidas WHERE user_id = %s AND post_id = %s"
+        cursor.execute(query_remove_like, (user_id, post_id))
+        action = "removed"
+    else:
+        query_add_like = "INSERT INTO curtidas (user_id, post_id) VALUES (%s, %s)"
+        cursor.execute(query_add_like, (user_id, post_id))
+        action = "added"
+
+    query_count_likes = "SELECT COUNT(*) AS curtidas_count FROM curtidas WHERE post_id = %s"
+    cursor.execute(query_count_likes, (post_id,))
+    curtidas_count = cursor.fetchone()["curtidas_count"]
+
+    query_update_post_likes = "UPDATE post_grupo SET curtidas_count = %s WHERE post_id = %s"
+    cursor.execute(query_update_post_likes, (curtidas_count, post_id))
+
+    con.commit()
+    cursor.close()
+    con.close()
+
+    return jsonify({"success": True, "action": action, "curtidas_count": curtidas_count})
+
+
+
+def criar_grupo_bd(nome, imagem, criador_id):
     con = conexao_abrir()
     cursor = con.cursor()
 
-    query = "INSERT INTO grupos (nome, imagem) VALUES (%s, %s)"
-    cursor.execute(query, (nome, imagem))
+    query = "INSERT INTO grupos (nome, imagem, criador_id) VALUES (%s, %s, %s)"
+    cursor.execute(query, (nome, imagem, criador_id))
+    con.commit()
+
+    grupo_id = cursor.lastrowid
+
+    query_participante = "INSERT INTO grupo_usuarios (grupo_id, usuario_id) VALUES (%s, %s)"
+    cursor.execute(query_participante, (grupo_id, criador_id))
     con.commit()
 
     cursor.close()
     con.close()
+
 
 def listar_grupos_bd(usuario_id):
     con = conexao_abrir()
@@ -247,7 +296,7 @@ def listar_grupos_bd(usuario_id):
     con.close()
     return grupos
 
-@app.route("/criar-grupo", methods=["GET", "POST"])
+@app.route("/criar-grupo", methods=["POST"])
 def criar_grupo():
     if request.method == "POST":
         nome = request.form.get("nome")
@@ -256,8 +305,12 @@ def criar_grupo():
         if not nome or not imagem:
             return render_template("criar_grupo.html", error="Todos os campos são obrigatórios.")
 
-        criar_grupo_bd(nome, imagem)
-        return redirect(url_for("descubra"))
+        criador_id = session.get("user_id")
+        if not criador_id:
+            return redirect(url_for("login"))
+
+        criar_grupo_bd(nome, imagem, criador_id)
+        return redirect(url_for("grupos"))
 
     return render_template("criar_grupo.html")
 
@@ -308,7 +361,8 @@ def participar_grupo(grupo_id):
     usuario_id = session['user_id']
     participar_grupo_bd(grupo_id, usuario_id)
 
-    return redirect(url_for("descubra"))
+    return redirect(url_for("grupos"))
+
 
 @app.route("/grupos")
 def grupos():
@@ -319,20 +373,22 @@ def grupos():
     meus_grupos = listar_grupos_usuario(usuario_id)
     novos_grupos = listar_grupos_bd(usuario_id)
 
-    return render_template("grupos.html", meus_grupos=meus_grupos, novos_grupos=novos_grupos)
+    return render_template("grupos.html", meus_grupos=meus_grupos, novos_grupos=novos_grupos, user=session['user'])
 
 def obter_detalhes_grupo(grupo_id):
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
 
-    query_grupo = "SELECT id, nome, imagem FROM grupos WHERE id = %s"
+    query_grupo = "SELECT id, nome, imagem, criador_id FROM grupos WHERE id = %s"
     cursor.execute(query_grupo, (grupo_id,))
     grupo = cursor.fetchone()
 
     query_participantes = """
-    SELECT u.usuario_nome, u.usuario_user
+    SELECT u.usuario_nome, u.usuario_user,
+           CASE WHEN gu.usuario_id = g.criador_id THEN 1 ELSE 0 END AS is_criador
     FROM grupo_usuarios gu
     JOIN usuario u ON gu.usuario_id = u.usuario_id
+    JOIN grupos g ON gu.grupo_id = g.id
     WHERE gu.grupo_id = %s
     """
     cursor.execute(query_participantes, (grupo_id,))
@@ -343,18 +399,21 @@ def obter_detalhes_grupo(grupo_id):
 
     return grupo, participantes
 
+
 def listar_posts_grupo(grupo_id):
     con = conexao_abrir()
     cursor = con.cursor(dictionary=True)
 
     query = """
     SELECT p.post_id AS id, p.content, p.created_at, 
-           p.curtidas_count, u.usuario_nome, u.usuario_user
+        (SELECT COUNT(*) FROM curtidas WHERE post_id = p.post_id) AS curtidas_count,
+        u.usuario_nome, u.usuario_user
     FROM post_grupo p
     JOIN usuario u ON p.user_id = u.usuario_id
     WHERE p.grupo_id = %s
     ORDER BY p.created_at DESC
     """
+
     cursor.execute(query, (grupo_id,))
     posts = cursor.fetchall()
 
@@ -369,7 +428,9 @@ def pagina_grupo(grupo_id):
 
     grupo, participantes = obter_detalhes_grupo(grupo_id)
     posts = listar_posts_grupo(grupo_id)
-    return render_template("grupo.html", grupo=grupo, participantes=participantes, posts=posts, user=session.get('user'))
+    eventos = listar_eventos_grupo(grupo_id)
+    return render_template("grupo.html", grupo=grupo, participantes=participantes, posts=posts, eventos=eventos, user=session['user'])
+
 
 @app.route("/grupo/<int:grupo_id>/postar", methods=["POST"])
 def criar_post_grupo(grupo_id):
@@ -391,19 +452,108 @@ def criar_post_grupo(grupo_id):
     con.close()
     return redirect(url_for("pagina_grupo", grupo_id=grupo_id))
 
+@app.route("/grupo/<int:grupo_id>/criar-evento", methods=["POST"])
+def criar_evento(grupo_id):
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
 
+    usuario_id = session['user_id']
+    titulo = request.form.get("titulo")
+    data = request.form.get("data")
+    local = request.form.get("local")
+    descricao = request.form.get("descricao")
 
+    con = conexao_abrir()
+    cursor = con.cursor()
 
+    query = """
+    INSERT INTO eventos (grupo_id, titulo, data, local, descricao, criador_id) 
+    VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    cursor.execute(query, (grupo_id, titulo, data, local, descricao, usuario_id))
+    con.commit()
 
+    cursor.close()
+    con.close()
 
+    return redirect(url_for("pagina_grupo", grupo_id=grupo_id))
 
+def listar_eventos_grupo(grupo_id):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
 
+    query = """
+    SELECT titulo, data, local, descricao
+    FROM eventos
+    WHERE grupo_id = %s
+    ORDER BY data ASC
+    """
+    cursor.execute(query, (grupo_id,))
+    eventos = cursor.fetchall()
 
+    cursor.close()
+    con.close()
+    return eventos
 
+def listar_eventos_usuario(usuario_id):
+    con = conexao_abrir()
+    cursor = con.cursor(dictionary=True)
 
+    query = """
+    SELECT e.titulo AS nome_evento, e.data, e.local, g.nome AS grupo_nome, g.id AS grupo_id
+    FROM eventos e
+    JOIN grupo_usuarios gu ON e.grupo_id = gu.grupo_id
+    JOIN grupos g ON e.grupo_id = g.id
+    WHERE gu.usuario_id = %s
+    ORDER BY e.data ASC
+    """
+    cursor.execute(query, (usuario_id,))
+    eventos = cursor.fetchall()
 
+    cursor.close()
+    con.close()
+    return eventos
 
-####################
+@app.before_request
+def carregar_eventos():
+    if 'user_id' in session:
+        usuario_id = session['user_id']
+        eventos = listar_eventos_usuario(usuario_id)
+        session['eventos'] = eventos
+
+@app.route("/meus-eventos")
+def meus_eventos():
+    if 'user_id' not in session:
+        return redirect(url_for("login"))
+
+    usuario_id = session['user_id']
+
+    ano_atual = datetime.now().year
+    mes_atual = datetime.now().month
+
+    cal = calendar.monthcalendar(ano_atual, mes_atual)
+
+    eventos = listar_eventos_usuario(usuario_id)
+
+    eventos_por_dia = {}
+    for evento in eventos:
+        dia_evento = evento['data'].day
+        if dia_evento not in eventos_por_dia:
+            eventos_por_dia[dia_evento] = []
+        eventos_por_dia[dia_evento].append(evento)
+
+    return render_template("meus_eventos.html", 
+                           cal=cal, 
+                           eventos_por_dia=eventos_por_dia, 
+                           mes_atual=mes_atual, 
+                           ano_atual=ano_atual, 
+                           user=session['user'])
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
 def password_check(password):
     """
     Verify the strength of 'password'

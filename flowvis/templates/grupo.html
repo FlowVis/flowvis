@@ -12,8 +12,47 @@
     <div class="grupo-info">
         <img src="{{ grupo['imagem'] }}" alt="Imagem do Grupo">
         <h1>{{ grupo['nome'] }}</h1>
+        {% if session['user_id'] == grupo['criador_id'] %}
+        <div class="admin-actions">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#criarEventoModal">Criar Evento</button>
+        </div>
+        {% endif %}
     </div>
+
     <div class="grupo-content">
+
+        <div class="eventos-section">
+            <h2>Eventos do Grupo</h2>
+            {% if eventos %}
+            <ul>
+                {% for evento in eventos %}
+                <li>
+                    <strong>{{ evento['titulo'] }}</strong> - {{ evento['data'] }}  
+                    <br>
+                    <small><i>{{ evento['local'] }}</i></small>
+                    <p>{{ evento['descricao'] }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>Não há eventos neste grupo.</p>
+            {% endif %}
+        </div>
+
+        <div class="participantes-section">
+            <h2>Participantes</h2>
+            <ul>
+                {% for participante in participantes %}
+                <li>
+                    {% if participante['is_criador'] %}
+                    <span>(Admin)</span>
+                    {% endif %}
+                    <strong>{{ participante['usuario_nome'] }}</strong> 
+                    (@{{ participante['usuario_user'] }})
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
 
         <div class="posts-section">
             <h2>Posts do Grupo</h2>
@@ -25,18 +64,22 @@
                     <p class="card-text">{{ post['content'] }}</p>
                     <div class="d-flex justify-content-between align-items-center">
                         <button class="btn btn-sm like-button {{ 'btn-danger' if post['user_curtida'] else 'btn-outline-danger' }}" 
-                                data-post-id="{{ post['id'] }}" 
-                                data-user-curtida="{{ '1' if post['user_curtida'] else '0' }}">
-                            <i class="{{ 'fa-thin fa-heart' if post['user_curtida'] else 'fa-regular fa-heart' }}"></i>
-                            {{ "Descurtir" if post['user_curtida'] else "Curtir" }} ({{ post['curtidas_count'] }})
-                        </button>
+                            data-post-id="{{ post['id'] }}" 
+                            data-grupo-id="{{ grupo['id'] }}" 
+                            data-user-curtida="{{ '1' if post['user_curtida'] else '0' }}">
+                        <i class="{{ 'fa-thin fa-heart' if post['user_curtida'] else 'fa-regular fa-heart' }}"></i>
+                        {{ "Descurtir" if post['user_curtida'] else "Curtir" }} ({{ post['curtidas_count'] }})
+                    </button>
                     </div>
                 </div>
             </div>
             {% endfor %}
+            
+            <div class="spacer"></div>
+            <div class="spacer"></div>
+            <div class="spacer"></div>
 
             <div class="post-form-fixed">
-                <h3>Criar Post</h3>
                 <form action="/grupo/{{ grupo['id'] }}/postar" method="POST" class="d-flex align-items-center">
                     <textarea class="form-control mb-2" name="content" rows="1" placeholder="O que você está pensando?" required></textarea>
                     <button type="submit" class="btn btn-primary">Postar</button>
@@ -44,17 +87,87 @@
             </div>
         </div>
 
-        <div class="participantes-section">
-            <h2>Participantes</h2>
-            <ul>
-                {% for participante in participantes %}
-                <li>
-                    <strong>{{ participante['usuario_nome'] }}</strong> (@{{ participante['usuario_user'] }})
-                </li>
-                {% endfor %}
-            </ul>
+        <div class="modal fade" id="criarEventoModal" tabindex="-1" aria-labelledby="criarEventoModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="criarEventoModalLabel">Criar Evento</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="/grupo/{{ grupo['id'] }}/criar-evento" method="POST">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="titulo" class="form-label">Título</label>
+                                <input type="text" class="form-control" id="titulo" name="titulo" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="data" class="form-label">Data</label>
+                                <input type="date" class="form-control" id="data" name="data" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="local" class="form-label">Local</label>
+                                <input type="text" class="form-control" id="local" name="local" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="descricao" class="form-label">Descrição</label>
+                                <textarea class="form-control" id="descricao" name="descricao" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            <button type="submit" class="btn btn-primary">Criar Evento</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
+
     </div>
 </div>
-    
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const likeButtons = document.querySelectorAll(".like-button");
+
+    likeButtons.forEach(button => {
+        button.addEventListener("click", function () {
+            const postId = this.getAttribute("data-post-id");
+            const grupoId = this.getAttribute("data-grupo-id");
+            const userCurtida = this.getAttribute("data-user-curtida") === "1";
+
+            fetch(`/grupo/${grupoId}/like/${postId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const icon = this.querySelector("i");
+                    if (data.action === "added") {
+                        this.classList.remove("btn-outline-danger");
+                        this.classList.add("btn-danger");
+                        this.setAttribute("data-user-curtida", "1");
+                        icon.classList.remove("fa-thin");
+                        icon.classList.add("fa-solid");
+                        this.innerHTML = `<i class="fa-solid fa-heart"></i> Descurtir (${data.curtidas_count})`;
+                    } else {
+                        this.classList.remove("btn-danger");
+                        this.classList.add("btn-outline-danger");
+                        this.setAttribute("data-user-curtida", "0");
+                        icon.classList.remove("fa-solid");
+                        icon.classList.add("fa-thin");
+                        this.innerHTML = `<i class="fa-thin fa-heart"></i> Curtir (${data.curtidas_count})`;
+                    }
+                } else {
+                    alert(data.message || "Erro ao curtir o post");
+                }
+            })
+            .catch(error => console.error("Erro:", error));
+        });
+    });
+    });
+</script>
+
 {% endblock %}

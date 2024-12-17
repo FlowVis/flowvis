@@ -6,23 +6,55 @@
 {% extends "base/loggedbase.html" %}
 {% block content %}
 <div class="groups-section">
+<div class="admin-actions">
+    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#criarGrupoModal">Criar Grupo</button>
+</div><br>
+
     <div class="tabs">
         <button class="tab-button active" data-tab="meus-grupos">Meus Grupos</button>
         <button class="tab-button" data-tab="novos-grupos">Novos Grupos</button>
     </div>
 </div>
+
+<div class="modal fade" id="criarGrupoModal" tabindex="-1" aria-labelledby="criarGrupoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="criarGrupoModalLabel">Criar Grupo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/criar-grupo" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome do Grupo</label>
+                        <input type="text" class="form-control" id="nome" name="nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imagem" class="form-label">Imagem do Grupo</label>
+                        <input type="text" class="form-control" id="imagem" name="imagem" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-primary">Criar Grupo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div id="meus-grupos" class="tab-content active">
     <div class="cards">
         {% for grupo in meus_grupos %}
         <div class="card">
-            <a href="/grupo/{{ grupo['id'] }}">
-                <img src="{{ grupo['imagem'] }}" alt="Imagem do Grupo" referrerpolicy="no-referrer">
-                <h3>{{ grupo['nome'] }}</h3>
-                <p>{{ grupo['participantes'] }} pessoas participam</p>
-            </a>
+            <img src="{{ grupo['imagem'] }}" alt="Imagem do Grupo" referrerpolicy="no-referrer">
+            <h3>{{ grupo['nome'] }}</h3>
+            <p>{{ grupo['participantes'] }} pessoas participam</p>
+            <form action="/grupo/{{ grupo['id'] }}" method="GET">
+                <button type="submit" class="btn btn-danger">Ver</button>
+            </form>
         </div>
-        
-        {% endfor %}    
+        {% endfor %}
     </div>
 </div>
 <div id="novos-grupos" class="tab-content">
@@ -33,13 +65,14 @@
             <h3>{{ grupo['nome'] }}</h3>
             <p>{{ grupo['participantes'] }} pessoas participam</p>
             <form action="/participar/{{ grupo['id'] }}" method="POST">
-                <button type="submit">Participar</button>
+                <button type="submit" class="btn btn-danger">Participar</button>
             </form>
         </div>
         {% endfor %}
     </div>
-    
 </div>
+
+
 
 <script>
     document.querySelectorAll('.tab-button').forEach(button => {

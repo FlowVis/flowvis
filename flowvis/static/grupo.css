@@ -9,8 +9,8 @@ body {
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 30px;
-    margin-left: 240px;
+    grid-template-columns: 1fr 30px 300px;
+    margin-left: 270px;
     height: 100%;
 }
 
@@ -386,8 +386,8 @@ body {
 }
 
 .grupo-content {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     margin-top: 20px;
 }

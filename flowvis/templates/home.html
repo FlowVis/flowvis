@@ -1,6 +1,6 @@
 {% extends "base/loggedbase.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Home{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
@@ -19,10 +19,7 @@
 
                 <section class="groups-section">
                     <div class="tabs">
-                        <button>Seus Grupos</button>
-                        <button>Convites</button>
-                        <button class="active">Tendências</button>
-                        <button>Seguindo</button>
+                        <button class="active">Posts</button>
                     </div>
 
             </section>
@@ -41,15 +38,18 @@
                             <i class="{{ 'fa-thin fa-heart' if post['user_curtida'] else 'fa-regular fa-heart' }}"></i>
                             {{ "Descurtir" if post['user_curtida'] else "Curtir" }} ({{ post['curtidas_count'] }})
                         </button>
-                        <span><i class="fas fa-comment"></i> Comentar</span>
+                        <span><i class="fas fa-comment"></i></span>
                     </div>
                 </div>
             </div>
             {% endfor %}
+
+            <div class="spacer"></div>
+
             <div class="post-form-fixed">
                 <form action="/post" method="POST" class="d-flex align-items-center">
                     <textarea class="form-control me-2" name="content" rows="1" placeholder="O que você está pensando?" required></textarea>
-                    <button type="submit" class="btn btn-primary">Postar</button>
+                    <button type="submit" class="btn btn-danger">Postar</button>
                 </form>
             </div>
             

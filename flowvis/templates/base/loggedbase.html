@@ -13,24 +13,17 @@
     <div class="container">
         <aside class="sidebar">
             <div class="logo">
-                <img src="static/images/logomarca.png" alt="FlowVis Logo">
+                <img src="{{ url_for('static', filename='images/logomarca.png') }}" alt="FlowVis Logo">
             </div>
             <nav class="menu">
                 <a class="nav-link active" href="/home">
                     <i class="fas fa-home"></i> Início
                 </a>
-                <a class="nav-link" href="/descubra">
-                    <i class="fas fa-search"></i> Descubra
-                </a>
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="/meus-eventos">
                     <i class="fas fa-calendar-alt"></i> Meus eventos
                 </a>
                 <a class="nav-link" href="/grupos">
                     <i class="fas fa-users"></i> Grupos
-                </a>
-                
-                <a class="nav-link" href="/criar-grupo">
-                    <i class="fas fa-plus"></i> Criar
                 </a>
             </nav>
             <div class="bottom-links">
@@ -42,17 +35,24 @@
                 </a>
             </div>
         </aside>
+
+        <button id="toggle-sidebar" class="btn btn-secondary d-lg-none">
+            <i class="fas fa-bars"></i>
+        </button>   
         
-        <main class="main-content">
+        <main class="main-content" style="margin-left: 150px; margin-right: 150px;">
             <header class="header">
-                <input type="text" placeholder="Procure um grupo ou evento">
+                <input type="text" class="form-control mt-3" placeholder="Procure um grupo ou evento">
                 <div class="icons">
-                    <img src="imagensfeed/curtidas.png" alt="Favoritos">
-                    <img src="imagensfeed/chat.png" alt="Notificações">
-                    <div class="profile">
-                        <i class="fa-solid fa-user"></i>
-                        <a href="/profile" style="color: inherit;">{{ user }}</a>
-                    </div>
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-brands fa-rocketchat"></i>
+                    <div class="profile d-flex align-items-center">
+                        <i class="fa-solid fa-user me-2"></i>
+                        <a href="/profile" style="color: inherit; margin-right: 10px;">{{ user }}</a>
+                        <form action="/logout" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
+                        </form>
+                    </div>                    
                 </div>
             </header>
     {% block content %}
@@ -60,17 +60,20 @@
     <aside class="event-sidebar">
         <h2>Principais eventos:</h2>
         <ul>
-            <li>
-                <span>FÓRMULA 1</span>
-                <p>13/03/2024<br>Autódromo de Interlagos</p>
-            </li>
-            <li>
-                <span>MIDNIGHT CLUB</span>
-                <p>13/03/2024<br>Kartódromo Aldeia da Serra</p>
-            </li>
+            {% if session.eventos %}
+                {% for evento in session.eventos %}
+                <li>
+                    <span style="font-weight: bold;">{{ evento.nome_evento }}</span>
+                    <p>{{ evento.data }}<br>{{ evento.local }}</p>
+                    <p>Grupo: <a href="/grupo/{{ evento.grupo_id }}">{{ evento.grupo_nome }}</a></p>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li>Nenhum evento próximo.</li>
+            {% endif %}
         </ul>
-        <a href="#">Descubra todos</a>
     </aside>
+    
 </div>   
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
